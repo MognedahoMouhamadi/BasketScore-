@@ -1,125 +1,78 @@
 // src/screens/HomeScreen.tsx
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   SafeAreaView,
   ScrollView,
   StyleSheet,
   View,
-  Alert,
-  Platform,
   Text,
+  Button,
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-
-// adapte ces chemins à ta structure
-import SwitchTeam from '../components/molecules/useTeam';
+import SwitchTeam from '../hooks/useTeam';
 import PlayerCard, { Player } from '../components/molecules/playerCard';
 import Header from '../components/organisms/Header';
 import { usePersistentState } from '../hooks/useStorage';
-import { useGameTimer, formatHMS } from '../hooks/useTime';
-import Chrono from '../components/molecules/chrono';
+import { useGameTimer } from '../hooks/useTime';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/types';
 
+type HomeNav = StackNavigationProp<RootStackParamList, 'Home'>;
 
 export default function HomeScreen() {
+  const navigation = useNavigation<HomeNav>();
   const { colors } = useTheme();
 
-  // équipe affichée (A ou B)
   const [selectedTeam, setSelectedTeam] = usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
-  const { elapsedMs, start, pause, reset, isRunning } = useGameTimer('match_timer');  
+  const { reset } = useGameTimer('match_timer');
 
-  // listes vides au départ
-  
-  const [playersA, setPlayersA] = useState<Player[]>([]);
-  const [playersB, setPlayersB] = useState<Player[]>([]);
+  const [playersA, setPlayersA] = usePersistentState<Player[]>('playersA', []);
+  const [playersB, setPlayersB] = usePersistentState<Player[]>('playersB', []);
 
+  const scoreA = useMemo(() => playersA.reduce((acc, p) => acc + p.score, 0), [playersA]);
+  const scoreB = useMemo(() => playersB.reduce((acc, p) => acc + p.score, 0), [playersB]);
 
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-   const [tempName, setTempName] = useState('');
-
-
-
-  /** Ajouter un joueur dans l'équipe choisie */
-   const addPlayer = useCallback((team: 'A' | 'B', name: string) => {
+  const addPlayer = useCallback((team: 'A' | 'B', name: string) => {
     const safe = name?.trim() || `Joueur ${team}-${Date.now().toString().slice(-3)}`;
-    if (team === 'A') setPlayersA(prev => [...prev, { name: safe, score: 0 }]);
-    else setPlayersB(prev => [...prev, { name: safe, score: 0 }]);
+    team === 'A'
+      ? setPlayersA(prev => [...prev, { name: safe, score: 0 }])
+      : setPlayersB(prev => [...prev, { name: safe, score: 0 }]);
   }, [setPlayersA, setPlayersB]);
-
-
-
-
-
 
   const onScore = useCallback((team: 'A' | 'B', index: number, points: number) => {
-    if (team === 'A') setPlayersA(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
-    else setPlayersB(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
+    team === 'A'
+      ? setPlayersA(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p))
+      : setPlayersB(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
   }, [setPlayersA, setPlayersB]);
 
-
-
-
-const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
-  const name = newName.trim();
-  if (!name) return;
-
-  if (team === 'A') {
-    setPlayersA(prev => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], name };
-      return copy;
-    });
-  } else {
-    setPlayersB(prev => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], name };
-      return copy;
-    });
-  }
-};
+  const onEdit = useCallback((team: 'A' | 'B', index: number, newName: string) => {
+    const name = newName.trim();
+    if (!name) return;
+    team === 'A'
+      ? setPlayersA(prev => prev.map((p,i)=>i===index ? { ...p, name } : p))
+      : setPlayersB(prev => prev.map((p,i)=>i===index ? { ...p, name } : p));
+  }, [setPlayersA, setPlayersB]);
 
   const onDelete = useCallback((team: 'A' | 'B', index: number) => {
-    if (team === 'A') setPlayersA(prev => prev.filter((_,i)=>i!==index));
-    else setPlayersB(prev => prev.filter((_,i)=>i!==index));
+    team === 'A'
+      ? setPlayersA(prev => prev.filter((_,i)=>i!==index))
+      : setPlayersB(prev => prev.filter((_,i)=>i!==index));
   }, [setPlayersA, setPlayersB]);
 
   const onReset = () => {
-  setPlayersA(prev => prev.map(p => ({ ...p, score: 0 })));
-  setPlayersB(prev => prev.map(p => ({ ...p, score: 0 })));
-  reset(); // <- la fonction reset() du chrono
-};
+    setPlayersA(prev => prev.map(p => ({ ...p, score: 0 })));
+    setPlayersB(prev => prev.map(p => ({ ...p, score: 0 })));
+    reset();
+  };
 
-
-  
-  // Liste à afficher selon le switch
   const visiblePlayers = selectedTeam === 'A' ? playersA : playersB;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-
-      <Header title="VS" scoreA={playersA.reduce((acc, p) => acc + p.score, 0)} scoreB={playersB.reduce((acc, p) => acc + p.score, 0)} />
-
-    {/* la méthode reduce permet de calculer le score total de chaque équipe en parcourant la liste des joueurs et en additionnant leurs scores. 
-
-    <Text style={{ color: colors.text }}>
-      Score Team A: {playersA.reduce((acc, p) => acc + p.score, 0)}
-    </Text>
-    <Text style={{ color: colors.text }}>
-      Score Team B: {playersB.reduce((acc, p) => acc + p.score, 0)}
-    </Text>
-
-    acc est l'accumulateur qui commence à 0 et p est le joueur courant dans la liste.
-
-    p est un objet de type Player qui a une propriété score.
-    0 est la valeur initiale de l'accumulateur.
-
-    reduce est une méthode des tableaux en JavaScript qui permet de réduire un tableau à une seule valeur en appliquant une fonction à chaque élément du tableau.
-
-    garder le commentaire pour l'explication
-
-    */}
+      <Header title="VS" scoreA={scoreA} scoreB={scoreB} />
 
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Sélecteur d'équipe */}
         <View style={styles.sectionHeader}>
           <SwitchTeam
             teamAName="Team A"
@@ -129,7 +82,6 @@ const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
           />
         </View>
 
-        {/* Petit résumé (optionnel) */}
         <View style={[styles.summary, { backgroundColor: colors.gris }]}>
           <Text style={{ color: colors.text }}>
             Équipe affichée : {selectedTeam} • Joueurs : {visiblePlayers.length}
@@ -142,7 +94,6 @@ const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
           </Text>
         </View>
 
-        {/* Liste des joueurs de l'équipe sélectionnée */}
         <PlayerCard
           players={visiblePlayers}
           team={selectedTeam}
@@ -151,6 +102,16 @@ const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
           onEdit={onEdit}
           onDelete={onDelete}
         />
+
+        {/* 👉 bouton manuel pour aller au bilan */}
+        <View style={{ marginTop: 20 }}>
+          <Button
+            title="Voir le dernier match"
+            onPress={() =>
+              navigation.navigate('MatchSummary', { matchId: 'dernier-id-sauvegardé' })
+            }
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

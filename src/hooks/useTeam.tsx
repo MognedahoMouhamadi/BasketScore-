@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Button } from '../atoms/button';
-import { useTheme } from '../../theme/ThemeProvider';
+import { Button } from '../components/atoms/button';
+import { useTheme } from '../theme/ThemeProvider';
 
 interface SwitchTeamProps {
   teamAName: string;
