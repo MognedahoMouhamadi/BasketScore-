@@ -45,10 +45,18 @@ export default function HomeScreen() {
     else setPlayersB(prev => [...prev, { name: safe, score: 0 }]);
   }, [setPlayersA, setPlayersB]);
 
+
+
+
+
+
   const onScore = useCallback((team: 'A' | 'B', index: number, points: number) => {
     if (team === 'A') setPlayersA(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
     else setPlayersB(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
   }, [setPlayersA, setPlayersB]);
+
+
+
 
 const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
   const name = newName.trim();

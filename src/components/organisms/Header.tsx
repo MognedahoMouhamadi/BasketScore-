@@ -12,30 +12,49 @@ import SwitchTeam from '../molecules/useTeam';
 type HeaderProps = {
   title: string;
   showBack?: boolean;
+  scoreA?: number;
+  scoreB?: number;
 };
 
-export default function Header({ title, showBack = false }: HeaderProps) {
+export default function Header({ title, showBack = false, scoreA = 0, scoreB = 0 }: HeaderProps) {
   const { colors } = useTheme();
   const navigation = useNavigation();
   const TeamA = 'Team A';
   const TeamB = 'Team B';
+
 
   return (
     <View style={{ flex: 1, ...styles.container, backgroundColor: colors.primary }}>
      
       <View style={styles.team}>
 
-        <Text variant="title" style={{ color: colors.text }}>
+          <View style={{ flex: 1 }}>
+            
+          <Text variant="title" style={{ color: colors.text }}>
           {TeamA}
-        </Text>
+          </Text>
 
+          <Text>{scoreA}</Text>
+          
+          </View>
+
+
+        <View style={{ flex: 1 }}>
         <Text variant="title" style={[styles.title, { color: colors.text }]}>
         {title}
         </Text>
-        
+
+
+        <View/>
+
+
         <Text variant="title" style={{ color: colors.text }}>
           {TeamB}
         </Text>
+
+        <Text>{scoreB}</Text>
+          
+        </View>
         <View />
 
       </View>
