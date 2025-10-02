@@ -96,7 +96,28 @@ const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
 
-      <Header title="VS" />
+      <Header title="VS" scoreA={playersA.reduce((acc, p) => acc + p.score, 0)} scoreB={playersB.reduce((acc, p) => acc + p.score, 0)} />
+
+    {/* la méthode reduce permet de calculer le score total de chaque équipe en parcourant la liste des joueurs et en additionnant leurs scores. 
+
+    <Text style={{ color: colors.text }}>
+      Score Team A: {playersA.reduce((acc, p) => acc + p.score, 0)}
+    </Text>
+    <Text style={{ color: colors.text }}>
+      Score Team B: {playersB.reduce((acc, p) => acc + p.score, 0)}
+    </Text>
+
+    acc est l'accumulateur qui commence à 0 et p est le joueur courant dans la liste.
+
+    p est un objet de type Player qui a une propriété score.
+    0 est la valeur initiale de l'accumulateur.
+
+    reduce est une méthode des tableaux en JavaScript qui permet de réduire un tableau à une seule valeur en appliquant une fonction à chaque élément du tableau.
+
+    garder le commentaire pour l'explication
+
+    */}
+
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Sélecteur d'équipe */}
         <View style={styles.sectionHeader}>
