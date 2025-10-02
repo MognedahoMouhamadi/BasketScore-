@@ -1,0 +1,14 @@
+export const colors = {
+  primary: "#fff",
+  secondary: "#0055FF",
+  background: "#ffffffff",
+  surface: "#F5F5F5",
+  text: "#333333",
+  accent: "#FFCC00",
+  start_button: "rgba(28, 53, 94, 1)",
+  rose: "#ff4f91",
+  gris: "#eeeeee",
+  verte: "#2e7",
+  rouge: "#f66",
+  violet: "rgba(51, 65, 255, 1)"
+};
