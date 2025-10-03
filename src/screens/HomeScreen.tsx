@@ -24,8 +24,10 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeNav>();
   const { colors } = useTheme();
 
-  const [selectedTeam, setSelectedTeam] = usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
-  const { reset } = useGameTimer('match_timer');
+  const [selectedTeam, setSelectedTeam] = usePersistentState<'A' | 'B'>('ui_selected_team', 'A');// sert à mémoriser la team sélectionnée
+  const { reset } = useGameTimer('match_timer'); // hook pour gérer le timer de jeu
+
+  // états persistants pour les joueurs des deux équipes
 
   const [playersA, setPlayersA] = usePersistentState<Player[]>('playersA', []);
   const [playersB, setPlayersB] = usePersistentState<Player[]>('playersB', []);
