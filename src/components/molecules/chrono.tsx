@@ -3,11 +3,22 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text as RNText } from 'react-native';
 import { Button } from '../atoms/button';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useGameTimer } from '../../hooks/useTime';
 
-export default function Chrono() {
+
+
+
+type ChronoProps = {
+  onEnd?: () => void;
+  elapsedMs?: number;
+};
+
+export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps) {
   const { colors } = useTheme();
   const [running, setRunning] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+ 
+  // Si elapsedMs est fourni par le parent, on l'utilise
 
   // Met à jour le chrono chaque seconde quand il tourne
   useEffect(() => {
@@ -89,7 +100,8 @@ export default function Chrono() {
             borderRadius={10}
             paddingVertical={10}
             paddingHorizontal={20}
-            onPress={handleRestart}
+            onPress={onEnd}
+            disabled={elapsed <= 3} // c'est bien 3s minimum  
             style={{ marginLeft: 12 }}
           />
         </View>

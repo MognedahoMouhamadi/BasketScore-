@@ -1,56 +1,90 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../atoms/text';
 import Chrono from '../molecules/chrono';
+import { finalizeMatch } from './../../helpers/FinalizerMatch';
+import type { Player } from '../molecules/playerCard';
 
 type HeaderProps = {
   title: string;
   showBack?: boolean;
-  // score?: number; // si tu veux des scores dynamiques, passe-les en props séparées
   scoreA?: number;
   scoreB?: number;
+  teamAName?: string;
+  teamBName?: string;
+  playersA?: Player[];
+  playersB?: Player[];
+  // 👉 passe le temps écoulé depuis le parent (même source que ton chrono)
+  elapsedMs: number;
+  // 👉 optionnel: navigation après END
+  onNavigateToSummary?: (matchId: string) => void;
 };
 
-export default function Header({ title, showBack = false, scoreA = 0, scoreB = 0 }: HeaderProps) {
+export default function Header({
+  title,
+  showBack = false,
+  scoreA = 0,
+  scoreB = 0,
+  teamAName = 'Team A',
+  teamBName = 'Team B',
+  playersA = [],
+  playersB = [],
+  elapsedMs,
+  onNavigateToSummary,
+}: HeaderProps) {
   const { colors } = useTheme();
-  const TeamA = 'Team A';
-  const TeamB = 'Team B';
+  // id + start conservés pour cette session d’affichage
+  const matchId = useMemo(() => Date.now().toString(), []);
+  const startedAt = useMemo(() => Date.now(), []);
+  const MIN_DURATION_MS = 3000;
+
+  const onEnd = async () => {
+    if (elapsedMs <= MIN_DURATION_MS) return;
+    const endedAt = Date.now();
+
+    try {
+      console.log('[END] save summary', { matchId, elapsedMs });
+      await finalizeMatch({
+        matchId,
+        teamAName,
+        teamBName,
+        playersA,
+        playersB,
+        durationMs: elapsedMs,
+        startedAt,
+        endedAt,
+      });
+      onNavigateToSummary?.(matchId);      // 👈 navigate après save
+    } catch (e) {
+      console.warn('finalizeMatch failed', e);
+    }
+  };
+
 
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
-      {/* Ligne équipes */}
       <View style={styles.teamRow}>
-        {/* Colonne gauche */}
         <View style={styles.colLeft}>
-          <Text variant="title" style={{ color: colors.text }}>{TeamA}</Text>
+          <Text variant="title" style={{ color: colors.text }}>{teamAName}</Text>
           <Text style={{ color: colors.text }}>{scoreA}</Text>
-
-          {/* je veux ajouter une image ici plus tard */}
           <View style={{ height: 24, borderRadius: 12, backgroundColor: colors.rose }} />
-          {/* <Image source={require('../../assets/teamA.png')} style={{ width: 24, height: 24 }} /> */}
         </View>
 
-        {/* Colonne centre */}
         <View style={styles.colCenter}>
           <Text variant="title" style={[styles.title, { color: colors.text }]}>{title}</Text>
         </View>
 
-        {/* Colonne droite */}
         <View style={styles.colRight}>
-          <Text variant="title" style={{ color: colors.text }}>{TeamB}</Text>
+          <Text variant="title" style={{ color: colors.text }}>{teamBName}</Text>
           <Text style={{ color: colors.text }}>{scoreB}</Text>
-
-          {/* je veux ajouter une image ici plus tard */}
           <View style={{ height: 24, borderRadius: 12, backgroundColor: colors.rose }} />
-          {/* <Image source={require('../../assets/teamA.png')} style={{ width: 24, height: 24 }} /> */}
         </View>
-         
       </View>
 
-      {/* Chrono centré */}
       <View style={styles.chronoWrap}>
-        <Chrono />
+        {/* ✅ on passe bien la callback END au chrono */}
+        <Chrono onEnd={onEnd} />
       </View>
     </View>
   );
@@ -58,50 +92,27 @@ export default function Header({ title, showBack = false, scoreA = 0, scoreB = 0
 
 const styles = StyleSheet.create({
   container: {
-    // ⚠️ ne mets pas flex:1 ici, sinon le header prend toute la page
     flexDirection: 'column',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
+    margin: 10,
     borderRadius: 20,
     elevation: 4,
-    margin: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
+    shadowOpacity: 0.1,
     shadowRadius: 6,
   },
-
   teamRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
     width: '100%',
+    marginBottom: 8,
   },
-
-  colLeft: {
-    flex: 1,
-    alignItems: 'flex-start',
-    gap: 4,
-  },
-  colCenter: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 4,
-  },
-  colRight: {
-    flex: 1,
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-
-  title: {
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
-
-  chronoWrap: {
-    marginTop: 12,
-    width: '100%',
-    alignItems: 'center',
-  },
+  colLeft: { flex: 1, alignItems: 'flex-start', gap: 4 },
+  colCenter: { flex: 1, alignItems: 'center' },
+  colRight: { flex: 1, alignItems: 'flex-end', gap: 4 },
+  title: { fontWeight: 'bold', fontSize: 20 },
+  chronoWrap: { width: '100%', alignItems: 'center', marginTop: 6 },
 });

@@ -32,11 +32,23 @@ export default function MatchSummaryScreen() {
   const [summary, setSummary] = useState<MatchSummary | null>(null);
 
   useEffect(() => {
-    (async () => {
-      const raw = await AsyncStorage.getItem(`match:summary:${params.matchId}`);
-      if (raw) setSummary(JSON.parse(raw));
-    })();
-  }, [params.matchId]);
+  (async () => {
+    const key = `match:summary:${params.matchId}`;
+    const raw = await AsyncStorage.getItem(key);
+    console.log('[Summary] load', key, !!raw);
+    if (raw) setSummary(JSON.parse(raw));
+  })();
+}, [params.matchId]);
+
+if (!summary) {
+  return (
+    <SafeAreaView style={{ flex:1, alignItems:'center', justifyContent:'center' }}>
+      <Text>Aucun bilan trouvé pour ce match.</Text>
+      <Button title="Retour" onPress={() => nav.goBack()} />
+    </SafeAreaView>
+  );
+}
+
 
   // ... après les imports et useEffect qui charge summary
 if (!summary) {
