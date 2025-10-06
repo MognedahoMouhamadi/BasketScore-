@@ -1,80 +1,110 @@
-import React from 'react';
-import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useMemo } from 'react';
+import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../atoms/text';
-import { Icon } from '../atoms/Icon';
-import { useNavigation } from '@react-navigation/native';
-import { Button } from '../atoms/button';
 import Chrono from '../molecules/chrono';
-import SwitchTeam from '../molecules/useTeam';
+import type { Player } from '../molecules/playerCard';
 
 
 type HeaderProps = {
   title: string;
   showBack?: boolean;
+  scoreA?: number;
+  scoreB?: number;
+  teamAName?: string;
+  teamBName?: string;
+  playersA?: Player[];
+  playersB?: Player[];
+  // 👉 passe le temps écoulé depuis le parent (même source que ton chrono)
+  elapsedMs: number;
+  // 👉 optionnel: navigation après END
+  onNavigateToSummary?: (matchId: string) => void;
+  onEnd?: () => void; // Callback when the match ends
+  isRunning?: boolean; // Indicates if the timer is running
+  onStart?: () => void; // Callback when the timer starts
+  onPause?: () => void; // Callback when the timer is paused
+  onRestart?: () => void; // Callback when the timer restarts
+
 };
 
-export default function Header({ title, showBack = false }: HeaderProps) {
+export default function Header({
+  title,
+  scoreA = 0,
+  scoreB = 0,
+  teamAName = 'Team A',
+  teamBName = 'Team B',
+  elapsedMs,
+  onEnd,
+  isRunning,
+  onStart,
+  onPause,
+  onRestart,
+}: HeaderProps) {
   const { colors } = useTheme();
-  const navigation = useNavigation();
-  const TeamA = 'Team A';
-  const TeamB = 'Team B';
+  // id + start conservés pour cette session d’affichage
+  const matchId = useMemo(() => Date.now().toString(), []);
+  const startedAt = useMemo(() => Date.now(), []);
+  const MIN_DURATION_MS = 3000;
 
   return (
-    <View style={{ flex: 1, ...styles.container, backgroundColor: colors.primary }}>
-     
-      <View style={styles.team}>
+    <View style={[styles.container, { backgroundColor: colors.primary }]}>
+      <View style={styles.teamRow}>
+        <View style={styles.colLeft}>
+          <Text variant="title" style={{ color: colors.text }}>{teamAName}</Text>
+          <Text style={{ color: colors.text }}>{scoreA}</Text>
+          <View style={{ height: 24, borderRadius: 12, backgroundColor: colors.rose }} />
+        </View>
 
-        <Text variant="title" style={{ color: colors.text }}>
-          {TeamA}
-        </Text>
+        <View style={styles.colCenter}>
+          <Text variant="title" style={[styles.title, { color: colors.text }]}>{title}</Text>
+        </View>
 
-        <Text variant="title" style={[styles.title, { color: colors.text }]}>
-        {title}
-        </Text>
-        
-        <Text variant="title" style={{ color: colors.text }}>
-          {TeamB}
-        </Text>
-        <View />
-
+        <View style={styles.colRight}>
+          <Text variant="title" style={{ color: colors.text }}>{teamBName}</Text>
+          <Text style={{ color: colors.text }}>{scoreB}</Text>
+          <View style={{ height: 24, borderRadius: 12, backgroundColor: colors.rose }} />
+        </View>
       </View>
-      <Chrono />
-      
+
+      <View style={styles.chronoWrap}>
+        {/* ✅ on passe bien la callback END au chrono */}
+           <Chrono
+          elapsedMs={elapsedMs}
+          onEnd={onEnd}
+          isRunning={isRunning}
+          onStart={onStart}
+          onPause={onPause}
+          onRestart={onRestart}
+        />
+        
+      </View>
     </View>
   );
 }
-
-
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'column',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
+    margin: 10,
     borderRadius: 20,
     elevation: 4,
-    margin: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.10,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 6,
   },
-  backButton: {
-    marginRight: 16,
-  },
-  title: {
-    fontWeight: 'bold',
-    fontSize: 20,
-  },
-
-  team: {
+  teamRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
     width: '100%',
-  }
+    marginBottom: 8,
+  },
+  colLeft: { flex: 1, alignItems: 'flex-start', gap: 4 },
+  colCenter: { flex: 1, alignItems: 'center' },
+  colRight: { flex: 1, alignItems: 'flex-end', gap: 4 },
+  title: { fontWeight: 'bold', fontSize: 20 },
+  chronoWrap: { width: '100%', alignItems: 'center', marginTop: 6 },
 });

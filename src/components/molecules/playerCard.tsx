@@ -7,6 +7,11 @@ import {
 import { Button } from '../atoms/button';
 import { colors } from '../../theme';
 
+
+
+
+const ROW_HEIGHT = 72; // ~ hauteur d'une ligne (ajuste si besoin)
+const SQUARE = 36; // taille des boutons carrés
 export interface Player { name: string; score: number; }
 
 interface PlayerCardProps {
@@ -48,6 +53,15 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
         extraData={players} // ✅ force le rerender quand le nom change
         keyExtractor={(_, index) => `${team}-${index}`}
         contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 8 }}
+
+        style={{ maxHeight: ROW_HEIGHT * 3 }}   //  scroll à partir de 3 items
+  // getItemLayout (facultatif pour perf)
+        getItemLayout={(_, index) => ({
+              length: ROW_HEIGHT,
+              offset: ROW_HEIGHT * index,
+              index,
+            })}
+
         keyboardShouldPersistTaps="handled"
         ListHeaderComponent={
           <View style={styles.headerRow}>
@@ -94,16 +108,16 @@ const PlayerCard: React.FC<PlayerCardProps> = ({
             <View style={styles.pointsRow}>
               <Button title="" onPress={() => onScore(team, index, 1)}
                 bgColor={colors.verte} paddingHorizontal={10} borderRadius={5}
-                style={{ marginHorizontal: 2 }} />
+                style={{ width: SQUARE, height: SQUARE, marginHorizontal: 2 }} />
               <Button title="" onPress={() => onScore(team, index, 2)}
                 bgColor={colors.accent} paddingHorizontal={10} borderRadius={5}
-                style={{ marginHorizontal: 2 }} />
+                style={{ width: SQUARE, height: SQUARE, marginHorizontal: 2 }} />
               <Button title="" onPress={() => onScore(team, index, 3)}
                 bgColor={colors.violet} paddingHorizontal={10} borderRadius={5}
-                style={{ marginHorizontal: 2 }} />
+                style={{ width: SQUARE, height: SQUARE, marginHorizontal: 2 }} />
               <Button title="" onPress={() => onScore(team, index, 4)}
                 bgColor={colors.rouge} paddingHorizontal={10} borderRadius={5}
-                style={{ marginHorizontal: 2 }} />
+                style={{ width: SQUARE, height: SQUARE, marginHorizontal: 2 }} />
             </View>
 
             <View style={styles.actionsRow}>
@@ -160,12 +174,18 @@ const styles = StyleSheet.create({
   emptyText: { marginBottom: 8, color: '#666' },
 
   playerRow: {
-    flexDirection: 'row', alignItems: 'center',
-    marginBottom: 12, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 8,
-  },
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingBottom: 8,
+  marginBottom: 12,
+  borderBottomWidth: 1,
+  borderBottomColor: '#eee',
+  minHeight: 64,              // ✅ cohérent avec ROW_HEIGHT
+},
+
   playerName: { flex: 1, fontSize: 16 },
   playerScore: { width: 30, textAlign: 'center', fontWeight: 'bold' },
-  pointsRow: { flexDirection: 'row', marginHorizontal: 8 },
+  pointsRow: { flexDirection: 'row', flexShrink: 0, }, // ✅ empêche le bouton de rétrécir
   actionsRow: { flexDirection: 'row', alignItems: 'center' },
   edit: { fontSize: 18, marginHorizontal: 6 },
   delete: { fontSize: 18, marginHorizontal: 6 },

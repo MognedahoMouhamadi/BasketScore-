@@ -1,96 +1,120 @@
 // src/screens/HomeScreen.tsx
-import React, { useCallback, useState } from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StyleSheet,
-  View,
-  Alert,
-  Platform,
-  Text,
-} from 'react-native';
+import React, { useMemo, useRef } from 'react';
+import { SafeAreaView, ScrollView, StyleSheet, View, Text, Button } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
-
-// adapte ces chemins à ta structure
-import SwitchTeam from '../components/molecules/useTeam';
-import PlayerCard, { Player } from '../components/molecules/playerCard';
+import SwitchTeam from '../hooks/useTeam';
+import PlayerCard from '../components/molecules/playerCard';
 import Header from '../components/organisms/Header';
 import { usePersistentState } from '../hooks/useStorage';
-import { useGameTimer, formatHMS } from '../hooks/useTime';
-import Chrono from '../components/molecules/chrono';
+import { useGameTimer } from '../hooks/useTime';
+import { useNavigation } from '@react-navigation/native';
+import type { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePlayers } from '../hooks/usePlayers';
+import { finalizeMatch } from '../helpers/FinalizerMatch';
+import { newMatchId } from '../helpers/id';
 
+type RootStackParamList = {
+  Home: undefined;
+  MatchSummary: { matchId: string };
+  MatchHistory: undefined;
+};
+
+const MIN_DURATION_MS = 3000;
 
 export default function HomeScreen() {
   const { colors } = useTheme();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Home'>>();
 
-  // équipe affichée (A ou B)
-  const [selectedTeam, setSelectedTeam] = usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
-  const { elapsedMs, start, pause, reset, isRunning } = useGameTimer('match_timer');  
+  // A/B affichée
+  const [selectedTeam, setSelectedTeam] =
+    usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
 
-  // listes vides au départ
-  
-  const [playersA, setPlayersA] = useState<Player[]>([]);
-  const [playersB, setPlayersB] = useState<Player[]>([]);
+  // Timer (source unique)
+  const { start, pause, reset, elapsedMs, isRunning } = useGameTimer('match_timer');
 
+  // ID + début de match (fixés pour la session)
+  const matchIdRef = useRef<string>(newMatchId());
+  const startedAtRef = useRef<number>(Date.now());
 
-  const [editingIndex, setEditingIndex] = useState<number | null>(null);
-   const [tempName, setTempName] = useState('');
-
-
-
-  /** Ajouter un joueur dans l'équipe choisie */
-   const addPlayer = useCallback((team: 'A' | 'B', name: string) => {
-    const safe = name?.trim() || `Joueur ${team}-${Date.now().toString().slice(-3)}`;
-    if (team === 'A') setPlayersA(prev => [...prev, { name: safe, score: 0 }]);
-    else setPlayersB(prev => [...prev, { name: safe, score: 0 }]);
-  }, [setPlayersA, setPlayersB]);
-
-  const onScore = useCallback((team: 'A' | 'B', index: number, points: number) => {
-    if (team === 'A') setPlayersA(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
-    else setPlayersB(prev => prev.map((p,i) => i===index ? { ...p, score: p.score + points } : p));
-  }, [setPlayersA, setPlayersB]);
-
-const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
-  const name = newName.trim();
-  if (!name) return;
-
-  if (team === 'A') {
-    setPlayersA(prev => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], name };
-      return copy;
-    });
-  } else {
-    setPlayersB(prev => {
-      const copy = [...prev];
-      copy[index] = { ...copy[index], name };
-      return copy;
-    });
-  }
-};
-
-  const onDelete = useCallback((team: 'A' | 'B', index: number) => {
-    if (team === 'A') setPlayersA(prev => prev.filter((_,i)=>i!==index));
-    else setPlayersB(prev => prev.filter((_,i)=>i!==index));
-  }, [setPlayersA, setPlayersB]);
-
-  const onReset = () => {
-  setPlayersA(prev => prev.map(p => ({ ...p, score: 0 })));
-  setPlayersB(prev => prev.map(p => ({ ...p, score: 0 })));
-  reset(); // <- la fonction reset() du chrono
-};
+  // Joueurs & scores (une seule source : le hook)
+  const { playersA, playersB, addPlayer, onScore, onEdit, onDelete, resetScores } = usePlayers();
 
 
-  
-  // Liste à afficher selon le switch
+
+  const scoreA = useMemo(() => playersA.reduce((acc, p) => acc + p.score, 0), [playersA]);
+  const scoreB = useMemo(() => playersB.reduce((acc, p) => acc + p.score, 0), [playersB]);
+
   const visiblePlayers = selectedTeam === 'A' ? playersA : playersB;
+
+  // END: finaliser, sauver, nav
+  const handleEnd = async () => {
+  if (elapsedMs <= MIN_DURATION_MS) return;
+
+  const matchId = matchIdRef.current;
+  const startedAt = startedAtRef.current;
+
+  await finalizeMatch({
+    matchId,
+    teamAName: 'Team A',
+    teamBName: 'Team B',
+    playersA,
+    playersB,
+    durationMs: elapsedMs,
+    startedAt,
+    endedAt: Date.now(),
+  });
+
+  navigation.navigate('MatchSummary', { matchId });
+  reset();
+  resetScores();
+};
+
+  // START
+  const handleStart = () => {
+    // si on part de 0 → nouveau match
+    if (!isRunning && elapsedMs === 0) {
+      matchIdRef.current = newMatchId();
+      startedAtRef.current = Date.now();
+    }
+    start();
+  };
+
+  // RESTART
+  const handleRestart = () => {
+    reset();
+    matchIdRef.current = newMatchId();
+    startedAtRef.current = Date.now();
+  };
+
+
+  // Ouvrir le dernier bilan
+  const openLastSummary = async () => {
+    const lastId = await AsyncStorage.getItem('match:summary:last');
+    if (!lastId) {
+      console.log('Aucun match sauvegardé.');
+      return;
+    }
+    navigation.navigate('MatchSummary', { matchId: lastId });
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+      <Header
+        title="VS"
+        teamAName="Team A"
+        teamBName="Team B"
+        scoreA={scoreA}
+        scoreB={scoreB}
+        elapsedMs={elapsedMs}
+        onEnd={handleEnd}
+        isRunning={isRunning}
+        onStart={handleStart}
+        onPause={pause}
+        onRestart={handleRestart}
+      />
 
-      <Header title="VS" />
       <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Sélecteur d'équipe */}
         <View style={styles.sectionHeader}>
           <SwitchTeam
             teamAName="Team A"
@@ -100,20 +124,23 @@ const onEdit = (team: 'A' | 'B', index: number, newName: string) => {
           />
         </View>
 
-        {/* Petit résumé (optionnel) */}
         <View style={[styles.summary, { backgroundColor: colors.gris }]}>
           <Text style={{ color: colors.text }}>
             Équipe affichée : {selectedTeam} • Joueurs : {visiblePlayers.length}
           </Text>
           <Text
             style={{ color: colors.rose, fontWeight: '700' }}
-            onPress={onReset}
+            onPress={() => {
+              resetScores();
+              reset();
+            }}
           >
             Remettre les scores à 0
           </Text>
+          <Button title="dernier match" onPress={openLastSummary} />
+          <Button title="Historique" onPress={() => navigation.navigate('MatchHistory')} />
         </View>
 
-        {/* Liste des joueurs de l'équipe sélectionnée */}
         <PlayerCard
           players={visiblePlayers}
           team={selectedTeam}
