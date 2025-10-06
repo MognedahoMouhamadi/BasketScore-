@@ -3,9 +3,8 @@ import { View, StyleSheet } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../atoms/text';
 import Chrono from '../molecules/chrono';
-import { finalizeMatch } from './../../helpers/FinalizerMatch';
 import type { Player } from '../molecules/playerCard';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 type HeaderProps = {
   title: string;
@@ -20,58 +19,32 @@ type HeaderProps = {
   elapsedMs: number;
   // 👉 optionnel: navigation après END
   onNavigateToSummary?: (matchId: string) => void;
-
   onEnd?: () => void; // Callback when the match ends
   isRunning?: boolean; // Indicates if the timer is running
   onStart?: () => void; // Callback when the timer starts
   onPause?: () => void; // Callback when the timer is paused
   onRestart?: () => void; // Callback when the timer restarts
 
-
 };
 
 export default function Header({
   title,
-  showBack = false,
   scoreA = 0,
   scoreB = 0,
   teamAName = 'Team A',
   teamBName = 'Team B',
-  playersA = [],
-  playersB = [],
   elapsedMs,
-  onNavigateToSummary,
+  onEnd,
+  isRunning,
+  onStart,
+  onPause,
+  onRestart,
 }: HeaderProps) {
   const { colors } = useTheme();
   // id + start conservés pour cette session d’affichage
   const matchId = useMemo(() => Date.now().toString(), []);
   const startedAt = useMemo(() => Date.now(), []);
   const MIN_DURATION_MS = 3000;
-
-  const onEnd = async () => {
-  if (elapsedMs <= 3000) return; // 3s mini
-  const endedAt = Date.now();
-  console.log('le bouton END a été pressé', { elapsedMs, startedAt, endedAt });
-  await finalizeMatch({
-    matchId,
-    teamAName,
-    teamBName,
-    playersA,
-    playersB,
-    durationMs: elapsedMs,
-    startedAt,
-    endedAt,
-  });
-
-  // ✅ mémorise l’ID du dernier match
-  await AsyncStorage.setItem('match:summary:last', matchId);
-
-  onNavigateToSummary?.(matchId); // ✅ navigue avec le VRAI id
-  console.log('[Header] Match finalisé', matchId);
-  elapsedMs = 0; // reset elapsedMs after finalizing the match
-  console.log('elapsedMs reset to 0 after finalizing the match')
-};
-
 
   return (
     <View style={[styles.container, { backgroundColor: colors.primary }]}>
@@ -95,7 +68,15 @@ export default function Header({
 
       <View style={styles.chronoWrap}>
         {/* ✅ on passe bien la callback END au chrono */}
-        <Chrono onEnd={onEnd} />
+           <Chrono
+          elapsedMs={elapsedMs}
+          onEnd={onEnd}
+          isRunning={isRunning}
+          onStart={onStart}
+          onPause={onPause}
+          onRestart={onRestart}
+        />
+        
       </View>
     </View>
   );

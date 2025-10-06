@@ -12,6 +12,7 @@ import type { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePlayers } from '../hooks/usePlayers';
 import { finalizeMatch } from '../helpers/FinalizerMatch';
+import { newMatchId } from '../helpers/id';
 
 type RootStackParamList = {
   Home: undefined;
@@ -32,7 +33,7 @@ export default function HomeScreen() {
   const { start, pause, reset, elapsedMs, isRunning } = useGameTimer('match_timer');
 
   // ID + début de match (fixés pour la session)
-  const matchIdRef = useRef<string>(Date.now().toString());
+  const matchIdRef = useRef<string>(newMatchId());
   const startedAtRef = useRef<number>(Date.now());
 
   // Joueurs & scores (une seule source : le hook)
@@ -46,13 +47,10 @@ export default function HomeScreen() {
   // END: finaliser, sauver, nav
   const handleEnd = async () => {
 
-        console.log('END pressed', { elapsedMs });
+    console.log('END pressed', { elapsedMs });
     console.log('Saving at', `match:summary:${matchIdRef.current}`);
     console.log('PlayersA', playersA.length, 'PlayersB', playersB.length);
     console.log('ScoreA', scoreA, 'ScoreB', scoreB);
-
-
-
 
     if (elapsedMs <= MIN_DURATION_MS) {
       console.log('END ignoré: durée trop courte', elapsedMs);
@@ -79,8 +77,27 @@ export default function HomeScreen() {
       console.warn('finalizeMatch error', e);
     }
 
-
+    reset();
+    resetScores();
   };
+
+  // START
+  const handleStart = () => {
+    // si on part de 0 → nouveau match
+    if (!isRunning && elapsedMs === 0) {
+      matchIdRef.current = newMatchId();
+      startedAtRef.current = Date.now();
+    }
+    start();
+  };
+
+  // RESTART
+  const handleRestart = () => {
+    reset();
+    matchIdRef.current = newMatchId();
+    startedAtRef.current = Date.now();
+  };
+
 
   // Ouvrir le dernier bilan
   const openLastSummary = async () => {
@@ -103,13 +120,9 @@ export default function HomeScreen() {
         elapsedMs={elapsedMs}
         onEnd={handleEnd}
         isRunning={isRunning}
-        onStart={start}
+        onStart={handleStart}
         onPause={pause}
-        onRestart={() => {
-          reset();
-          matchIdRef.current = Date.now().toString();
-          startedAtRef.current = Date.now();
-        }}
+        onRestart={handleRestart}
       />
 
       <ScrollView contentContainerStyle={styles.scroll}>

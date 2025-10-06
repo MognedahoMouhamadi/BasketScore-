@@ -3,51 +3,24 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text as RNText } from 'react-native';
 import { Button } from '../atoms/button';
 import { useTheme } from '../../theme/ThemeProvider';
-import { useGameTimer } from '../../hooks/useTime';
-
-
-
+import { formatHMS } from '../../hooks/useTime';
 
 type ChronoProps = {
-  onEnd?: () => void;
   elapsedMs?: number;
+  onEnd?: () => void;
+  isRunning?: boolean;
+  onStart?: () => void;
+  onPause?: () => void;
+  onRestart?: () => void;
 };
 
-export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps) {
+export default function Chrono({ onEnd, elapsedMs: elapsedMs, onStart, onPause, onRestart, isRunning }: ChronoProps) {
   const { colors } = useTheme();
-  const [running, setRunning] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
- 
-  // Si elapsedMs est fourni par le parent, on l'utilise
-
-  // Met à jour le chrono chaque seconde quand il tourne
-  useEffect(() => {
-    let timer: NodeJS.Timeout;
-    if (running) {
-      timer = setInterval(() => setElapsed(prev => prev + 1), 1000);
-    }
-    return () => clearInterval(timer);
-  }, [running]);
-
-  const handleStart = () => setRunning(true);
-  const handlePause = () => setRunning(false);
-  const handleResume = () => setRunning(true);
-  const handleRestart = () => {
-    setElapsed(0);
-    setRunning(false);
-  };
-
-  const minutes = String(Math.floor(elapsed / 60)).padStart(2, '0');
-  const seconds = String(elapsed % 60).padStart(2, '0');
-  const formatted = `${minutes}:${seconds}`;
-
   return (
     <View style={styles.container}>
-      <RNText style={[styles.timerText, { color: colors.text }]}>
-        {formatted}
-      </RNText>
+      <RNText style={styles.timerText}>{formatHMS(elapsedMs ?? 0)}</RNText>
       {/* État initial : Start */}
-      {!running && elapsed === 0 && (
+      {!isRunning && elapsedMs === 0 && (
         <Button
           title="START"
           bgColor={colors.start_button}
@@ -55,11 +28,11 @@ export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps)
           borderRadius={10}
           paddingVertical={10}
           paddingHorizontal={30}
-          onPress={handleStart}
+          onPress={onStart}
         />
       )}
       {/* En cours : Pause */}
-      {running && (
+      {isRunning && (
         <Button
           title="PAUSE"
           bgColor={colors.accent}
@@ -67,11 +40,11 @@ export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps)
           borderRadius={10}
           paddingVertical={10}
           paddingHorizontal={30}
-          onPress={handlePause}
+          onPress={onPause}
         />
       )}
       {/* En pause (elapsed > 0) : Resume & Restart */}
-      {!running && elapsed > 0 && (
+      {!isRunning && (elapsedMs ?? 0) > 0 && (
         <View style={styles.buttonsRow}>
           <Button
             title="RESUME"
@@ -80,7 +53,7 @@ export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps)
             borderRadius={10}
             paddingVertical={10}
             paddingHorizontal={20}
-            onPress={handleResume}
+            onPress={onStart}
           />
           <Button
             title="RESTART"
@@ -89,7 +62,7 @@ export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps)
             borderRadius={10}
             paddingVertical={10}
             paddingHorizontal={20}
-            onPress={handleRestart}
+            onPress={onRestart}
             style={{ marginLeft: 12 }}
           />
 
@@ -101,7 +74,7 @@ export default function Chrono({ onEnd, elapsedMs: propElapsedMs }: ChronoProps)
             paddingVertical={10}
             paddingHorizontal={20}
             onPress={onEnd}
-            disabled={elapsed <= 3} // c'est bien 3s minimum  
+            disabled={(elapsedMs ?? 0) <= 3} // c'est bien 3s minimum
             style={{ marginLeft: 12 }}
           />
         </View>
