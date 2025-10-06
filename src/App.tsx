@@ -7,6 +7,7 @@ import { ThemeProvider } from './theme/ThemeProvider';
 import HomeScreen from './screens/HomeScreen';
 import PlayerScreen from './screens/PlayerScreen';
 import MatchSummaryScreen from './screens/MatchSummaryScreen';
+import MatchHistoryScreen from './screens/matchHistoryScreen';
 
 const Stack = createStackNavigator();
 
@@ -25,6 +26,13 @@ export default function App() {
             component={MatchSummaryScreen} 
             options={{ title: 'Bilan du match' }} 
           />
+
+          <Stack.Screen
+            name="MatchHistory"
+            component={MatchHistoryScreen}
+            options={{ title: 'Historique des matchs', headerShown: true }}
+          />
+
         </Stack.Navigator>
       </NavigationContainer>
     </ThemeProvider>

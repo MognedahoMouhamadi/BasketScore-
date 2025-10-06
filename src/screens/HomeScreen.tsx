@@ -17,6 +17,7 @@ import { newMatchId } from '../helpers/id';
 type RootStackParamList = {
   Home: undefined;
   MatchSummary: { matchId: string };
+  MatchHistory: undefined;
 };
 
 const MIN_DURATION_MS = 3000;
@@ -39,6 +40,8 @@ export default function HomeScreen() {
   // Joueurs & scores (une seule source : le hook)
   const { playersA, playersB, addPlayer, onScore, onEdit, onDelete, resetScores } = usePlayers();
 
+
+
   const scoreA = useMemo(() => playersA.reduce((acc, p) => acc + p.score, 0), [playersA]);
   const scoreB = useMemo(() => playersB.reduce((acc, p) => acc + p.score, 0), [playersB]);
 
@@ -46,40 +49,26 @@ export default function HomeScreen() {
 
   // END: finaliser, sauver, nav
   const handleEnd = async () => {
+  if (elapsedMs <= MIN_DURATION_MS) return;
 
-    console.log('END pressed', { elapsedMs });
-    console.log('Saving at', `match:summary:${matchIdRef.current}`);
-    console.log('PlayersA', playersA.length, 'PlayersB', playersB.length);
-    console.log('ScoreA', scoreA, 'ScoreB', scoreB);
+  const matchId = matchIdRef.current;
+  const startedAt = startedAtRef.current;
 
-    if (elapsedMs <= MIN_DURATION_MS) {
-      console.log('END ignoré: durée trop courte', elapsedMs);
-      return;
-    }
-    const matchId = matchIdRef.current;
-    const startedAt = startedAtRef.current;
+  await finalizeMatch({
+    matchId,
+    teamAName: 'Team A',
+    teamBName: 'Team B',
+    playersA,
+    playersB,
+    durationMs: elapsedMs,
+    startedAt,
+    endedAt: Date.now(),
+  });
 
-    try {
-      await finalizeMatch({
-        matchId,
-        teamAName: 'Team A',
-        teamBName: 'Team B',
-        playersA,
-        playersB,
-        durationMs: elapsedMs,
-        startedAt,
-        endedAt: Date.now(),
-      });
-
-      await AsyncStorage.setItem('match:summary:last', matchId);
-      navigation.navigate('MatchSummary', { matchId });
-    } catch (e) {
-      console.warn('finalizeMatch error', e);
-    }
-
-    reset();
-    resetScores();
-  };
+  navigation.navigate('MatchSummary', { matchId });
+  reset();
+  resetScores();
+};
 
   // START
   const handleStart = () => {
@@ -148,7 +137,8 @@ export default function HomeScreen() {
           >
             Remettre les scores à 0
           </Text>
-          <Button title="Voir le dernier match" onPress={openLastSummary} />
+          <Button title="dernier match" onPress={openLastSummary} />
+          <Button title="Historique" onPress={() => navigation.navigate('MatchHistory')} />
         </View>
 
         <PlayerCard

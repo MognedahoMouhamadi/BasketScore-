@@ -22,16 +22,20 @@ export async function finalizeMatch({
     scoreA, scoreB, durationMs, startedAt, endedAt,
   };
 
-  const key = `match:summary:${matchId}`;        // 👈 clé unique
-  await AsyncStorage.setItem(key, JSON.stringify(summary));
+  // 1) clé unique
+  await AsyncStorage.setItem(`match:summary:${matchId}`, JSON.stringify(summary));
 
-  // index
-  const listKey = `match:summary:index`;
-  const raw = (await AsyncStorage.getItem(listKey)) || '[]';
-  const arr: string[] = JSON.parse(raw);
-  if (!arr.includes(matchId)) {
-    arr.unshift(matchId);
-    await AsyncStorage.setItem(listKey, JSON.stringify(arr));
+  // 2) index d’historique (sans écraser)
+  const idxKey = 'match:summary:index';
+  const raw = (await AsyncStorage.getItem(idxKey)) || '[]';
+  const ids: string[] = JSON.parse(raw);
+  if (!ids.includes(matchId)) {
+    ids.unshift(matchId); // dernier en premier
+    await AsyncStorage.setItem(idxKey, JSON.stringify(ids));
   }
+
+  // 3) pointeur “dernier”
+  await AsyncStorage.setItem('match:summary:last', matchId);
+
   return summary;
 }
