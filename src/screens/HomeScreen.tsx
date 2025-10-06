@@ -11,7 +11,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePlayers } from '../hooks/usePlayers';
-import { finalizeMatch } from '../helpers/finalizeMatch';
+import { finalizeMatch } from '../helpers/FinalizerMatch';
 
 type RootStackParamList = {
   Home: undefined;
@@ -45,6 +45,15 @@ export default function HomeScreen() {
 
   // END: finaliser, sauver, nav
   const handleEnd = async () => {
+
+        console.log('END pressed', { elapsedMs });
+    console.log('Saving at', `match:summary:${matchIdRef.current}`);
+    console.log('PlayersA', playersA.length, 'PlayersB', playersB.length);
+    console.log('ScoreA', scoreA, 'ScoreB', scoreB);
+
+
+
+
     if (elapsedMs <= MIN_DURATION_MS) {
       console.log('END ignoré: durée trop courte', elapsedMs);
       return;
@@ -69,6 +78,8 @@ export default function HomeScreen() {
     } catch (e) {
       console.warn('finalizeMatch error', e);
     }
+
+
   };
 
   // Ouvrir le dernier bilan
