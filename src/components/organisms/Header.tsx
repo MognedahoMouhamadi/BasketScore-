@@ -5,6 +5,7 @@ import { Text } from '../atoms/text';
 import Chrono from '../molecules/chrono';
 import { finalizeMatch } from './../../helpers/FinalizerMatch';
 import type { Player } from '../molecules/playerCard';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HeaderProps = {
   title: string;
@@ -19,6 +20,14 @@ type HeaderProps = {
   elapsedMs: number;
   // 👉 optionnel: navigation après END
   onNavigateToSummary?: (matchId: string) => void;
+
+  onEnd?: () => void; // Callback when the match ends
+  isRunning?: boolean; // Indicates if the timer is running
+  onStart?: () => void; // Callback when the timer starts
+  onPause?: () => void; // Callback when the timer is paused
+  onRestart?: () => void; // Callback when the timer restarts
+
+
 };
 
 export default function Header({
@@ -40,26 +49,28 @@ export default function Header({
   const MIN_DURATION_MS = 3000;
 
   const onEnd = async () => {
-    if (elapsedMs <= MIN_DURATION_MS) return;
-    const endedAt = Date.now();
+  if (elapsedMs <= 3000) return; // 3s mini
+  const endedAt = Date.now();
+  console.log('le bouton END a été pressé', { elapsedMs, startedAt, endedAt });
+  await finalizeMatch({
+    matchId,
+    teamAName,
+    teamBName,
+    playersA,
+    playersB,
+    durationMs: elapsedMs,
+    startedAt,
+    endedAt,
+  });
 
-    try {
-      console.log('[END] save summary', { matchId, elapsedMs });
-      await finalizeMatch({
-        matchId,
-        teamAName,
-        teamBName,
-        playersA,
-        playersB,
-        durationMs: elapsedMs,
-        startedAt,
-        endedAt,
-      });
-      onNavigateToSummary?.(matchId);      // 👈 navigate après save
-    } catch (e) {
-      console.warn('finalizeMatch failed', e);
-    }
-  };
+  // ✅ mémorise l’ID du dernier match
+  await AsyncStorage.setItem('match:summary:last', matchId);
+
+  onNavigateToSummary?.(matchId); // ✅ navigue avec le VRAI id
+  console.log('[Header] Match finalisé', matchId);
+  elapsedMs = 0; // reset elapsedMs after finalizing the match
+  console.log('elapsedMs reset to 0 after finalizing the match')
+};
 
 
   return (

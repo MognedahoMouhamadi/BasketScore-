@@ -40,6 +40,7 @@ export default function MatchSummaryScreen() {
   })();
 }, [params.matchId]);
 
+
 if (!summary) {
   return (
     <SafeAreaView style={{ flex:1, alignItems:'center', justifyContent:'center' }}>

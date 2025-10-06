@@ -1,4 +1,5 @@
-import React, { useMemo } from 'react';
+// src/screens/HomeScreen.tsx
+import React, { useMemo, useRef } from 'react';
 import { SafeAreaView, ScrollView, StyleSheet, View, Text, Button } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import SwitchTeam from '../hooks/useTeam';
@@ -8,23 +9,33 @@ import { usePersistentState } from '../hooks/useStorage';
 import { useGameTimer } from '../hooks/useTime';
 import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { usePlayers } from '../hooks/usePlayers';
+import { finalizeMatch } from '../helpers/finalizeMatch';
 
 type RootStackParamList = {
   Home: undefined;
   MatchSummary: { matchId: string };
 };
 
-
-import { usePlayers } from '../hooks/usePlayers';
+const MIN_DURATION_MS = 3000;
 
 export default function HomeScreen() {
   const { colors } = useTheme();
-  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList, 'Home'>>();
 
-  const [selectedTeam, setSelectedTeam] = usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
-  const { reset, elapsedMs } = useGameTimer('match_timer');
+  // A/B affichée
+  const [selectedTeam, setSelectedTeam] =
+    usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
 
-  // ✅ tout vient du hook
+  // Timer (source unique)
+  const { start, pause, reset, elapsedMs, isRunning } = useGameTimer('match_timer');
+
+  // ID + début de match (fixés pour la session)
+  const matchIdRef = useRef<string>(Date.now().toString());
+  const startedAtRef = useRef<number>(Date.now());
+
+  // Joueurs & scores (une seule source : le hook)
   const { playersA, playersB, addPlayer, onScore, onEdit, onDelete, resetScores } = usePlayers();
 
   const scoreA = useMemo(() => playersA.reduce((acc, p) => acc + p.score, 0), [playersA]);
@@ -32,37 +43,88 @@ export default function HomeScreen() {
 
   const visiblePlayers = selectedTeam === 'A' ? playersA : playersB;
 
+  // END: finaliser, sauver, nav
+  const handleEnd = async () => {
+    if (elapsedMs <= MIN_DURATION_MS) {
+      console.log('END ignoré: durée trop courte', elapsedMs);
+      return;
+    }
+    const matchId = matchIdRef.current;
+    const startedAt = startedAtRef.current;
+
+    try {
+      await finalizeMatch({
+        matchId,
+        teamAName: 'Team A',
+        teamBName: 'Team B',
+        playersA,
+        playersB,
+        durationMs: elapsedMs,
+        startedAt,
+        endedAt: Date.now(),
+      });
+
+      await AsyncStorage.setItem('match:summary:last', matchId);
+      navigation.navigate('MatchSummary', { matchId });
+    } catch (e) {
+      console.warn('finalizeMatch error', e);
+    }
+  };
+
+  // Ouvrir le dernier bilan
+  const openLastSummary = async () => {
+    const lastId = await AsyncStorage.getItem('match:summary:last');
+    if (!lastId) {
+      console.log('Aucun match sauvegardé.');
+      return;
+    }
+    navigation.navigate('MatchSummary', { matchId: lastId });
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-    <Header
+      <Header
         title="VS"
         teamAName="Team A"
         teamBName="Team B"
         scoreA={scoreA}
         scoreB={scoreB}
-        playersA={playersA}
-        playersB={playersB}
         elapsedMs={elapsedMs}
-        onNavigateToSummary={(id) => navigation.navigate('MatchSummary', { matchId: id })}
+        onEnd={handleEnd}
+        isRunning={isRunning}
+        onStart={start}
+        onPause={pause}
+        onRestart={() => {
+          reset();
+          matchIdRef.current = Date.now().toString();
+          startedAtRef.current = Date.now();
+        }}
       />
-    <ScrollView contentContainerStyle={styles.scroll}>
-    <View style={styles.sectionHeader}>
-        <SwitchTeam
+
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.sectionHeader}>
+          <SwitchTeam
             teamAName="Team A"
             teamBName="Team B"
             defaultTeam="A"
             onTeamChange={setSelectedTeam}
-        />
+          />
         </View>
 
         <View style={[styles.summary, { backgroundColor: colors.gris }]}>
           <Text style={{ color: colors.text }}>
             Équipe affichée : {selectedTeam} • Joueurs : {visiblePlayers.length}
           </Text>
-          <Text style={{ color: colors.rose, fontWeight: '700' }} onPress={() => { resetScores(); reset(); }}>
+          <Text
+            style={{ color: colors.rose, fontWeight: '700' }}
+            onPress={() => {
+              resetScores();
+              reset();
+            }}
+          >
             Remettre les scores à 0
           </Text>
-          <Button title="Voir le dernier match" onPress={() => navigation.navigate('MatchSummary', { matchId: 'dernier' })} />
+          <Button title="Voir le dernier match" onPress={openLastSummary} />
         </View>
 
         <PlayerCard
