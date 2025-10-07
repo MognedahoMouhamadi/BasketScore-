@@ -1,9 +1,11 @@
 // components/PlayerList.tsx
 import React, { useState } from 'react';
 import { View } from 'react-native';
-import PlayerCard, { Player } from './PlayerCard';
+import PlayerCard, { Player } from '../molecules/playerCard';
 
 export default function PlayerList() {
+
+  
   const [playersA, setPlayersA] = useState<Player[]>([
     { name: 'Alice', score: 0 },
     { name: 'Bob', score: 0 },
@@ -12,6 +14,8 @@ export default function PlayerList() {
     { name: 'Charlie', score: 0 },
     { name: 'David', score: 0 },
   ]);
+
+  
 
   const handleScore = (team: 'A' | 'B', index: number, points: number) => {
     if (team === 'A') {
@@ -43,6 +47,10 @@ export default function PlayerList() {
     else setPlayersB(prev => prev.filter((_, i) => i !== index));
   };
 
+  function handleAdd(team: 'A' | 'B', name: string): void {
+    throw new Error('Function not implemented.');
+  }
+
   return (
     <View>
       <PlayerCard
@@ -51,6 +59,7 @@ export default function PlayerList() {
         onScore={handleScore}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onAdd={handleAdd}
       />
       <PlayerCard
         players={playersB}
@@ -58,6 +67,7 @@ export default function PlayerList() {
         onScore={handleScore}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onAdd={handleAdd}
       />
     </View>
   );

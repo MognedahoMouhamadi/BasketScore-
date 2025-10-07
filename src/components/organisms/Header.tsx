@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../atoms/text';
 import Chrono from '../molecules/chrono';
@@ -24,6 +24,7 @@ type HeaderProps = {
   onStart?: () => void; // Callback when the timer starts
   onPause?: () => void; // Callback when the timer is paused
   onRestart?: () => void; // Callback when the timer restarts
+  onRenameTeam?: (team: 'A'|'B') => void;
 
 };
 
@@ -38,6 +39,7 @@ export default function Header({
   isRunning,
   onStart,
   onPause,
+  onRenameTeam,
   onRestart,
 }: HeaderProps) {
   const { colors } = useTheme();
@@ -47,38 +49,53 @@ export default function Header({
   const MIN_DURATION_MS = 3000;
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.primary }]}>
-      <View style={styles.teamRow}>
+  <><View style={[styles.container, { backgroundColor: colors.primary }]}>
+       <View style={styles.teamRow}>
+        {/* gauche */}
         <View style={styles.colLeft}>
-          <Text variant="title" style={{ color: colors.text }}>{teamAName}</Text>
+          <TouchableOpacity
+            onPress={() => onRenameTeam?.('A')}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center' }}
+          >
+            <Text variant="title" style={{ color: colors.text }}>{teamAName}</Text>
+            <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
+          </TouchableOpacity>
           <Text style={{ color: colors.text }}>{scoreA}</Text>
-          <View style={{ height: 24, borderRadius: 12, backgroundColor: colors.rose }} />
         </View>
 
+        {/* centre */}
         <View style={styles.colCenter}>
           <Text variant="title" style={[styles.title, { color: colors.text }]}>{title}</Text>
         </View>
 
+        {/* droite */}
         <View style={styles.colRight}>
-          <Text variant="title" style={{ color: colors.text }}>{teamBName}</Text>
+          <TouchableOpacity
+            onPress={() => onRenameTeam?.('B')}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center' }}
+          >
+            <Text variant="title" style={{ color: colors.text }}>{teamBName}</Text>
+            <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
+          </TouchableOpacity>
           <Text style={{ color: colors.text }}>{scoreB}</Text>
-          <View style={{ height: 24, borderRadius: 12, backgroundColor: colors.rose }} />
         </View>
       </View>
-
       <View style={styles.chronoWrap}>
         {/* ✅ on passe bien la callback END au chrono */}
-           <Chrono
+        <Chrono
           elapsedMs={elapsedMs}
           onEnd={onEnd}
           isRunning={isRunning}
           onStart={onStart}
           onPause={onPause}
-          onRestart={onRestart}
-        />
-        
+          onRestart={onRestart} />
       </View>
+
     </View>
+    
+      </>
   );
 }
 

@@ -4,6 +4,7 @@ import { SafeAreaView, ScrollView, StyleSheet, View, Text, Button } from 'react-
 import { useTheme } from '../theme/ThemeProvider';
 import SwitchTeam from '../hooks/useTeam';
 import PlayerCard from '../components/molecules/playerCard';
+import TeamNameModal from '../components/molecules/teamNameModal';
 import Header from '../components/organisms/Header';
 import { usePersistentState } from '../hooks/useStorage';
 import { useGameTimer } from '../hooks/useTime';
@@ -11,8 +12,10 @@ import { useNavigation } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { usePlayers } from '../hooks/usePlayers';
-import { finalizeMatch } from '../helpers/FinalizerMatch';
-import { newMatchId } from '../helpers/id';
+
+import { useMatchLogic } from '../hooks/useMatchLogic';
+import { useTeamNames } from '../hooks/useTeamName';
+import { on } from 'events';
 
 type RootStackParamList = {
   Home: undefined;
@@ -20,7 +23,7 @@ type RootStackParamList = {
   MatchHistory: undefined;
 };
 
-const MIN_DURATION_MS = 3000;
+export const MIN_DURATION_MS = 3000;
 
 export default function HomeScreen() {
   const { colors } = useTheme();
@@ -30,64 +33,46 @@ export default function HomeScreen() {
   const [selectedTeam, setSelectedTeam] =
     usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
 
-  // Timer (source unique)
-  const { start, pause, reset, elapsedMs, isRunning } = useGameTimer('match_timer');
+  // Noms des équipes (persistés), pour l’instant fixes mais modifiables plus tard
 
-  // ID + début de match (fixés pour la session)
-  const matchIdRef = useRef<string>(newMatchId());
-  const startedAtRef = useRef<number>(Date.now());
+const {
+    teamAName,
+    teamBName,
+    renameOpen,
+    openRename,
+    closeRename,
+    saveRename,
+  } = useTeamNames(); // Hook personnalisé pour gérer les noms des équipes
 
-  // Joueurs & scores (une seule source : le hook)
-  const { playersA, playersB, addPlayer, onScore, onEdit, onDelete, resetScores } = usePlayers();
+// Timer (source unique)
+const { start, pause, reset, elapsedMs, isRunning } = useGameTimer('match_timer');
 
+// Joueurs & scores (une seule source : le hook)
+const { playersA, playersB, addPlayer, onScore, onEdit, onDelete, resetScores } = usePlayers();
 
+const { matchIdRef, handleStart, handleRestartSeed, handleEnd } = useMatchLogic({
+  elapsedMs,
+  teamAName,
+  teamBName,
+  playersA,
+  playersB,
+  onSaved: (id) => {
+    // navigation + nettoyage côté écran
+    navigation.navigate('MatchSummary', { matchId: id });
+    reset();
+    resetScores();
+  },
+});
 
+const onStart = () => { handleStart(); start(); };
+const onRestart = () => { handleRestartSeed(); reset(); };
+
+// ID + début de match (fixés pour la session)
   const scoreA = useMemo(() => playersA.reduce((acc, p) => acc + p.score, 0), [playersA]);
   const scoreB = useMemo(() => playersB.reduce((acc, p) => acc + p.score, 0), [playersB]);
 
   const visiblePlayers = selectedTeam === 'A' ? playersA : playersB;
-
-  // END: finaliser, sauver, nav
-  const handleEnd = async () => {
-  if (elapsedMs <= MIN_DURATION_MS) return;
-
-  const matchId = matchIdRef.current;
-  const startedAt = startedAtRef.current;
-
-  await finalizeMatch({
-    matchId,
-    teamAName: 'Team A',
-    teamBName: 'Team B',
-    playersA,
-    playersB,
-    durationMs: elapsedMs,
-    startedAt,
-    endedAt: Date.now(),
-  });
-
-  navigation.navigate('MatchSummary', { matchId });
-  reset();
-  resetScores();
-};
-
-  // START
-  const handleStart = () => {
-    // si on part de 0 → nouveau match
-    if (!isRunning && elapsedMs === 0) {
-      matchIdRef.current = newMatchId();
-      startedAtRef.current = Date.now();
-    }
-    start();
-  };
-
-  // RESTART
-  const handleRestart = () => {
-    reset();
-    matchIdRef.current = newMatchId();
-    startedAtRef.current = Date.now();
-  };
-
-
+  // Finir le match, sauvegarder, puis naviguer
   // Ouvrir le dernier bilan
   const openLastSummary = async () => {
     const lastId = await AsyncStorage.getItem('match:summary:last');
@@ -102,31 +87,32 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
       <Header
         title="VS"
-        teamAName="Team A"
-        teamBName="Team B"
+        teamAName={teamAName}
+        teamBName={teamBName}
         scoreA={scoreA}
         scoreB={scoreB}
         elapsedMs={elapsedMs}
         onEnd={handleEnd}
         isRunning={isRunning}
-        onStart={handleStart}
+        onStart={onStart}
         onPause={pause}
-        onRestart={handleRestart}
+        onRestart={onRestart}
+        onRenameTeam={(t) => openRename(t)}   // 👈 (voir modal ci-dessous)
       />
 
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.sectionHeader}>
           <SwitchTeam
-            teamAName="Team A"
-            teamBName="Team B"
-            defaultTeam="A"
-            onTeamChange={setSelectedTeam}
+            teamAName={teamAName}
+            teamBName={teamBName}
+            value={selectedTeam}
+            onChange={setSelectedTeam}
           />
         </View>
 
         <View style={[styles.summary, { backgroundColor: colors.gris }]}>
           <Text style={{ color: colors.text }}>
-            Équipe affichée : {selectedTeam} • Joueurs : {visiblePlayers.length}
+            Team: {selectedTeam} • Nb jrs : {visiblePlayers.length}
           </Text>
           <Text
             style={{ color: colors.rose, fontWeight: '700' }}
@@ -139,6 +125,9 @@ export default function HomeScreen() {
           </Text>
           <Button title="dernier match" onPress={openLastSummary} />
           <Button title="Historique" onPress={() => navigation.navigate('MatchHistory')} />
+
+        {/* à mettre dans un écran menu */}
+
         </View>
 
         <PlayerCard
@@ -149,6 +138,14 @@ export default function HomeScreen() {
           onEdit={onEdit}
           onDelete={onDelete}
         />
+        <TeamNameModal
+          visible={renameOpen.open}
+          initialValue={renameOpen.team === 'A' ? teamAName : teamBName}
+          onCancel={closeRename}
+          onSave={saveRename}
+          title={renameOpen.team === 'A' ? "Renommer l'équipe A" : "Renommer l'équipe B"}
+        />
+
       </ScrollView>
     </SafeAreaView>
   );
