@@ -1,6 +1,7 @@
 // src/screens/HomeScreen.tsx
 import React, { useMemo, useRef } from 'react';
-import { SafeAreaView, ScrollView, StyleSheet, View, Text, Button } from 'react-native';
+import {ScrollView, StyleSheet, View, Text, Button } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
 import SwitchTeam from '../hooks/useTeam';
 import PlayerCard from '../components/molecules/playerCard';
@@ -15,12 +16,18 @@ import { usePlayers } from '../hooks/usePlayers';
 
 import { useMatchLogic } from '../hooks/useMatchLogic';
 import { useTeamNames } from '../hooks/useTeamName';
-import { on } from 'events';
+
+import {menuOpen, openMenu, closeMenu, toggleMenu} from '../hooks/useMenu';
+import MenuSheet from '../components/molecules/MenuSheet';
+
+
 
 type RootStackParamList = {
   Home: undefined;
   MatchSummary: { matchId: string };
   MatchHistory: undefined;
+  PlayersDirectory: undefined;
+  Settings: undefined;
 };
 
 export const MIN_DURATION_MS = 3000;
@@ -32,7 +39,6 @@ export default function HomeScreen() {
   // A/B affichée
   const [selectedTeam, setSelectedTeam] =
     usePersistentState<'A' | 'B'>('ui_selected_team', 'A');
-
   // Noms des équipes (persistés), pour l’instant fixes mais modifiables plus tard
 
 const {
@@ -98,6 +104,7 @@ const onRestart = () => { handleRestartSeed(); reset(); };
         onPause={pause}
         onRestart={onRestart}
         onRenameTeam={(t) => openRename(t)}   // 👈 (voir modal ci-dessous)
+        onOpenMenu={() => setMenuOpen(true)}
       />
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -147,6 +154,15 @@ const onRestart = () => { handleRestartSeed(); reset(); };
         />
 
       </ScrollView>
+      <MenuSheet
+        visible={menuOpen}
+        onClose={() => { closeMenu(); }}
+        onGoHistory={() => navigation.navigate('MatchHistory')}
+        onGoSettings={() => navigation.navigate('Settings')}        // écran placeholder
+        onGoPlayers={() => navigation.navigate('PlayersDirectory')} // écran placeholder
+      />
+
+
     </SafeAreaView>
   );
 }

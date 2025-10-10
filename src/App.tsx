@@ -5,9 +5,11 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { ThemeProvider } from './theme/ThemeProvider';
 import HomeScreen from './screens/HomeScreen';
-import PlayerScreen from './screens/PlayerScreen';
+import PlayerScreen from './screens/PlayersDirectoryScreen';
 import MatchSummaryScreen from './screens/MatchSummaryScreen';
 import MatchHistoryScreen from './screens/matchHistoryScreen';
+import PlayersDirectoryScreen from './screens/PlayersDirectoryScreen';
+import SettingsScreen from './screens/SettingScreen';
 
 const Stack = createStackNavigator();
 
@@ -32,6 +34,13 @@ export default function App() {
             component={MatchHistoryScreen}
             options={{ title: 'Historique des matchs', headerShown: true }}
           />
+          <Stack.Screen name="Settings" component={SettingsScreen} options={{ title:'Paramètres' }} />
+          <Stack.Screen name="PlayersDirectory" component={PlayersDirectoryScreen} options={{ title:'Joueurs enregistrés' }} />
+
+
+
+
+
 
         </Stack.Navigator>
       </NavigationContainer>
