@@ -132,7 +132,12 @@ const styles = StyleSheet.create({
   },
   colLeft: { flex: 1, alignItems: 'flex-start', gap: 4 },
   colCenter: { flex: 1, alignItems: 'center' },
-  colRight: { flex: 1, alignItems: 'flex-end', gap: 4 },
+  colRight: {
+    flex: 1,
+    alignItems: 'flex-end',
+    gap: 4,
+    paddingRight: 36, // ✅ espace ajouté pour éviter le chevauchement
+  },
   title: { fontWeight: 'bold', fontSize: 20 },
   chronoWrap: { width: '100%', alignItems: 'center', marginTop: 6 },
 });
