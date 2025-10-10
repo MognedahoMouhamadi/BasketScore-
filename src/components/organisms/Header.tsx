@@ -25,6 +25,7 @@ type HeaderProps = {
   onPause?: () => void; // Callback when the timer is paused
   onRestart?: () => void; // Callback when the timer restarts
   onRenameTeam?: (team: 'A'|'B') => void;
+  onOpenMenu?: () => void;
 
 };
 
@@ -41,6 +42,7 @@ export default function Header({
   onPause,
   onRenameTeam,
   onRestart,
+  onOpenMenu,
 }: HeaderProps) {
   const { colors } = useTheme();
   // id + start conservés pour cette session d’affichage
@@ -50,14 +52,23 @@ export default function Header({
 
   return (
   <><View style={[styles.container, { backgroundColor: colors.primary }]}>
+
+        {/* menu burger */}
+
+        <View style={{ position: 'absolute', right: 12, top: 10 }}>
+          <TouchableOpacity onPress={onOpenMenu} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <Text style={{ fontSize: 20, color: colors.text }}>☰</Text>
+          </TouchableOpacity>
+        </View>
        <View style={styles.teamRow}>
+
         {/* gauche */}
         <View style={styles.colLeft}>
           <TouchableOpacity
             onPress={() => onRenameTeam?.('A')}
             activeOpacity={0.7}
             style={{ flexDirection: 'row', alignItems: 'center' }}
-          >
+            >
             <Text variant="title" style={{ color: colors.text }}>{teamAName}</Text>
             <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
           </TouchableOpacity>
