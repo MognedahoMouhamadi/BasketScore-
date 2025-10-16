@@ -1,10 +1,11 @@
 // screens/MatchSummaryScreen.tsx
 import React, { useEffect, useState } from 'react';
-import { SafeAreaView, View, Text, StyleSheet, FlatList } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme/ThemeProvider';
 import { Button } from '../components/atoms/button';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Player = { name: string; points: number };
 type MatchSummary = {

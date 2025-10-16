@@ -1,6 +1,12 @@
 // src/navigation/types.ts
-export type RootStackParamList = {
+export type TabsParamList = {
   Home: undefined;
-  Player: undefined;
+  MatchHistory: undefined;
+  PlayersDirectory: undefined;
+  Settings: undefined;
+};
+
+export type RootStackParamList = {
+  Tabs: undefined;
   MatchSummary: { matchId: string };
 };

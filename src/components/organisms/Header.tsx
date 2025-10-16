@@ -55,13 +55,7 @@ export default function Header({
 
         {/* menu burger */}
 
-        <View style={{ position: 'absolute', right: 12, top: 10 }}>
-          <TouchableOpacity onPress={onOpenMenu} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={{ fontSize: 20, color: colors.text }}>☰</Text>
-          </TouchableOpacity>
-        </View>
        <View style={styles.teamRow}>
-
         {/* gauche */}
         <View style={styles.colLeft}>
           <TouchableOpacity
@@ -136,7 +130,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'flex-end',
     gap: 4,
-    paddingRight: 36, // ✅ espace ajouté pour éviter le chevauchement
+    paddingRight: 0, // ✅ espace ajouté pour éviter le chevauchement
   },
   title: { fontWeight: 'bold', fontSize: 20 },
   chronoWrap: { width: '100%', alignItems: 'center', marginTop: 6 },

@@ -17,8 +17,7 @@ import { usePlayers } from '../hooks/usePlayers';
 import { useMatchLogic } from '../hooks/useMatchLogic';
 import { useTeamNames } from '../hooks/useTeamName';
 
-import {menuOpen, openMenu, closeMenu, toggleMenu} from '../hooks/useMenu';
-import MenuSheet from '../components/molecules/MenuSheet';
+import BottomTabs from '../navigation/BottomTabs';
 
 
 
@@ -104,7 +103,6 @@ const onRestart = () => { handleRestartSeed(); reset(); };
         onPause={pause}
         onRestart={onRestart}
         onRenameTeam={(t) => openRename(t)}   // 👈 (voir modal ci-dessous)
-        onOpenMenu={() => setMenuOpen(true)}
       />
 
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -118,9 +116,6 @@ const onRestart = () => { handleRestartSeed(); reset(); };
         </View>
 
         <View style={[styles.summary, { backgroundColor: colors.gris }]}>
-          <Text style={{ color: colors.text }}>
-            Team: {selectedTeam} • Nb jrs : {visiblePlayers.length}
-          </Text>
           <Text
             style={{ color: colors.rose, fontWeight: '700' }}
             onPress={() => {
@@ -131,8 +126,6 @@ const onRestart = () => { handleRestartSeed(); reset(); };
             Remettre les scores à 0
           </Text>
           <Button title="dernier match" onPress={openLastSummary} />
-          <Button title="Historique" onPress={() => navigation.navigate('MatchHistory')} />
-
         {/* à mettre dans un écran menu */}
 
         </View>
@@ -154,14 +147,6 @@ const onRestart = () => { handleRestartSeed(); reset(); };
         />
 
       </ScrollView>
-      <MenuSheet
-        visible={menuOpen}
-        onClose={() => { closeMenu(); }}
-        onGoHistory={() => navigation.navigate('MatchHistory')}
-        onGoSettings={() => navigation.navigate('Settings')}        // écran placeholder
-        onGoPlayers={() => navigation.navigate('PlayersDirectory')} // écran placeholder
-      />
-
 
     </SafeAreaView>
   );
