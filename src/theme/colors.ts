@@ -10,5 +10,7 @@ export const colors = {
   gris: "#eeeeee",
   verte: "#2e7",
   rouge: "#f66",
-  violet: "rgba(51, 65, 255, 1)"
+  violet: "rgba(51, 65, 255, 1)",
+  card: "#ffffffff",
+  border: "#cccccc",
 };

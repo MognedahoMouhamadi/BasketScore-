@@ -1,153 +1,147 @@
 import React, { useMemo } from 'react';
 import { View, StyleSheet, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../atoms/text';
-import Chrono from '../molecules/chrono';
-import type { Player } from '../molecules/playerCard';
 import { formatMMSS } from '../../hooks/useTime';
+import Chrono from '../molecules/chrono';
 
-
-type HeaderProps = {
-  title: string;
-  showBack?: boolean;
-  scoreA?: number;
-  scoreB?: number;
+type Props = {
   teamAName?: string;
   teamBName?: string;
-  playersA?: Player[];
-  playersB?: Player[];
-  // 👉 passe le temps écoulé depuis le parent (même source que ton chrono)
+  scoreA?: number;
+  scoreB?: number;
   elapsedMs: number;
-  // 👉 optionnel: navigation après END
-  onNavigateToSummary?: (matchId: string) => void;
-  onEnd?: () => void; // Callback when the match ends
-  isRunning?: boolean; // Indicates if the timer is running
-  onStart?: () => void; // Callback when the timer starts
-  onPause?: () => void; // Callback when the timer is paused
-  onRestart?: () => void; // Callback when the timer restarts
-  onRenameTeam?: (team: 'A'|'B') => void;
-  onOpenMenu?: () => void;
-
+  isRunning?: boolean;
+  onStart?: () => void;
+  onPause?: () => void;
+  onRestart?: () => void;
+  onEnd?: () => void;
+  onRenameTeam?: (t: 'A'|'B') => void;
 };
 
 export default function Header({
-  title,
-  scoreA = 0,
-  scoreB = 0,
-  teamAName = 'Team A',
-  teamBName = 'Team B',
+  teamAName='McDo',
+  teamBName='Bking',
+  scoreA=0,
+  scoreB=0,
   elapsedMs,
-  onEnd,
   isRunning,
   onStart,
   onPause,
-  onRenameTeam,
   onRestart,
-  onOpenMenu,
-}: HeaderProps) {
+  onRenameTeam,
+  onEnd,
+}: Props) {
   const { colors } = useTheme();
-  // id + start conservés pour cette session d’affichage
-  const matchId = useMemo(() => Date.now().toString(), []);
-  const startedAt = useMemo(() => Date.now(), []);
-  const MIN_DURATION_MS = 3000;
+  const insets = useSafeAreaInsets();
+  const timerLabel = useMemo(() => formatMMSS(elapsedMs), [elapsedMs]);
+
+  const handlePrimary = () => {
+    if (isRunning) onPause?.();
+    else onStart?.();
+  };
+
+  const primaryLabel = isRunning ? 'PAUSE' : elapsedMs > 0 ? 'RESUME' : 'START';
 
   return (
-  <><View style={[styles.container, { backgroundColor: colors.primary }]}>
-       <View style={styles.teamRow}>
-        {/* gauche */}
-        <View style={styles.colLeft}>
-          <TouchableOpacity
-            onPress={() => onRenameTeam?.('A')}
-            activeOpacity={0.7}
-            style={{ flexDirection: 'row', alignItems: 'center' }}
-            >
-            <Text variant="title" style={{ color: colors.text }}>{teamAName}</Text>
-            <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
+    <View style={[styles.safeArea, { backgroundColor: colors.background, paddingTop: insets.top }]}>
+      <View style={[styles.container, { backgroundColor: colors.card }]}>
+        {/* Left side */}
+        <View style={styles.side}>
+          <TouchableOpacity onPress={() => onRenameTeam?.('A')} activeOpacity={0.7} style={styles.teamBtn}>
+            <Text style={[styles.teamName, { color: colors.text }]}>{teamAName}</Text>
+            <Text style={{ color: colors.text, opacity: 0.8, marginLeft: 6 }}>✏️</Text>
           </TouchableOpacity>
-          <Text style={{ color: colors.text }}>{scoreA}</Text>
-
         </View>
 
+    
 
-        {/* centre */}
+        {/* Center chrono */}
+        <View style={styles.center}>
+              {/* Score A */}
+          <Text style={[styles.scoreText, { color: colors.secondary }]}>{scoreA}</Text>
+          <Chrono
+            elapsedMs={elapsedMs}
+            isRunning={isRunning}
+            onStart={onStart}
+            onPause={onPause}
+            onRestart={onRestart}
+            showControls={true}
+            onEnd={onEnd}
+          />
+          {/* Score B */}
+          <Text style={[styles.scoreText, { color: colors.accent }]}>{scoreB}</Text>
+       
+        </View>
+
         
-        <View style={styles.colCenter}>
-          <View style={styles.chronoWrap}>
-            {/* 🛟 Fallback si Chrono ne montre rien */}
-            <Chrono
-              elapsedMs={elapsedMs}
-              onEnd={onEnd}
-              isRunning={isRunning}
-              onStart={onStart}
-              onPause={onPause}
-              onRestart={onRestart}
-            />
-            <Text variant="title" style={{ color: colors.text, position: 'absolute', opacity: 0.001 }}>
-              {formatMMSS(elapsedMs)}
-            </Text>
-          </View>
-        </View>
+     
 
-        {/* droite */}
 
-        <View style={styles.colRight}>
-          <Text style={{ color: colors.text }}>{scoreB}</Text>
-          <TouchableOpacity
-            onPress={() => onRenameTeam?.('B')}
-            activeOpacity={0.7}
-            style={{ flexDirection: 'row', alignItems: 'center' }}
-          >
-            <Text variant="title" style={{ color: colors.text }}>{teamBName}</Text>
-            <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
+        {/* Right side */}
+        <View style={[styles.side, { alignItems: 'flex-end' }]}>
+          <TouchableOpacity onPress={() => onRenameTeam?.('B')} activeOpacity={0.7} style={styles.teamBtn}>
+            <Text style={[styles.teamName, { color: colors.text }]}>{teamBName}</Text>
+            <Text style={{ color: colors.text, opacity: 0.8, marginLeft: 6 }}>✏️</Text>
           </TouchableOpacity>
         </View>
-
-
-
-
-
       </View>
     </View>
-    
-      </>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: { width: '100%' },
   container: {
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: 16,
-    margin: 10,
-    borderRadius: 20,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-  },
-  teamRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    width: '100%',
+    marginHorizontal: 12,
     marginBottom: 8,
-  },
-  colLeft: { flex: 1, alignItems: 'flex-start', gap: 4 , flexDirection: 'row' },
-  colCenter: { flex: 1, alignItems: 'center' },
-  colRight: {
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     flexDirection: 'row',
-    flex: 1,
-    alignItems: 'flex-end',
-    gap: 4, // ✅ espace ajouté pour éviter le chevauchement
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    columnGap: 12,
+    // léger effet carte
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
+  side: { flex: 1, justifyContent: 'center' },
+  teamBtn: { flexDirection: 'row', alignItems: 'center' },
+  teamName: { fontSize: 18, fontWeight: '600', letterSpacing: 0.2 },
 
-  timer: {
-    fontSize: 18,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+  scoreBox: {
+    width: 48,
+    height: 56,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+  scoreText: { fontSize: 32, fontWeight: '800' },
 
-  title: { fontWeight: 'bold', fontSize: 20 },
-  chronoWrap: { width: '100%', alignItems: 'center', marginTop: 6 },
+  center: { width: 200, alignItems: 'center', justifyContent: 'center', rowGap: 6, flexDirection: 'row', },
+  timerBox: {
+    height: 42,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 120,
+  },
+  timerText: { fontSize: 20, fontWeight: '700', letterSpacing: 0.5 },
+
+  primaryBtn: {
+    height: 38,
+    paddingHorizontal: 20,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  primaryLabel: { fontSize: 13, fontWeight: '700', letterSpacing: 1 },
 });
