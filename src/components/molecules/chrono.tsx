@@ -89,9 +89,9 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   timerText: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginBottom: 12,
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   buttonsRow: {
     flexDirection: 'row',

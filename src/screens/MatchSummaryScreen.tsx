@@ -17,7 +17,7 @@ type MatchSummary = {
   startedAt: number; endedAt: number;
 };
 
-const formatHMS = (ms: number) => {
+const formatMMSS = (ms: number) => {
   const t = Math.floor(ms / 1000);
   const h = Math.floor(t / 3600);
   const m = Math.floor((t % 3600) / 60);
@@ -74,7 +74,7 @@ if (!summary) {
           {summary.teamAName} {summary.scoreA} — {summary.scoreB} {summary.teamBName}
         </Text>
         <Text style={{ color: colors.text, opacity: 0.8 }}>
-          Durée : {formatHMS(summary.durationMs)}
+          Durée : {formatMMSS(summary.durationMs)}
         </Text>
       </View>
 

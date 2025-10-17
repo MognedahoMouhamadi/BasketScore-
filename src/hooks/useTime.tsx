@@ -1,5 +1,5 @@
 // hooks/useGameTimer.ts
-import { useEffect, useRef, useMemo } from 'react';
+import { useEffect, useRef, useMemo, useState } from 'react';
 import { usePersistentState } from './useStorage';
 
 type TimerState = {
@@ -15,7 +15,11 @@ export function useGameTimer(storageKey = 'game_timer') {
     accumulatedMs: 0,
   });
 
-  const raf = useRef<ReturnType<typeof setInterval> | null>(null);
+  // ⚠️ ce ref stocke un setInterval, pas un RAF
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // ✅ tick local pour re-render sans réécrire dans le storage
+  const [, force] = useState(0);
 
   const elapsedMs = useMemo(() => {
     if (!state.isRunning || state.startedAt == null) return state.accumulatedMs;
@@ -41,26 +45,28 @@ export function useGameTimer(storageKey = 'game_timer') {
     setState({ isRunning: false, startedAt: null, accumulatedMs: 0 });
   };
 
-  // tick “visuel” si tu veux rafraîchir un affichage chaque seconde
+  // ⏱️ rafraîchit l’affichage chaque seconde SANS toucher au storage
   useEffect(() => {
     if (!state.isRunning) return;
-    raf.current = setInterval(() => {
-      // juste pour déclencher un re-render via setState noop
-      setState(s => ({ ...s }));
+    intervalRef.current = setInterval(() => {
+      force(t => t + 1);
     }, 1000);
     return () => {
-      if (raf.current) clearInterval(raf.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
     };
-  }, [state.isRunning, setState]);
+  }, [state.isRunning]);
 
   return { elapsedMs, start, pause, reset, isRunning: state.isRunning };
 }
 
-// util
-export const formatHMS = (ms: number) => {
+// utils
+export const formatMMSS = (ms: number) => {
   const total = Math.floor(ms / 1000);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
+  const m = Math.floor(total / 60);     // ✅ minutes non limitées (peuvent dépasser 59)
   const s = total % 60;
-  return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  return `${m}:${s.toString().padStart(2, '0')}`;  // ex: 120:30
 };
+
+export const formatHMS = formatMMSS;
+// renvoie HH:MM:SS

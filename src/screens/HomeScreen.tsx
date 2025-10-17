@@ -90,8 +90,8 @@ const onRestart = () => { handleRestartSeed(); reset(); };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-      <Header
-        title="VS"
+        <Header
+        title=""
         teamAName={teamAName}
         teamBName={teamBName}
         scoreA={scoreA}

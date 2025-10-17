@@ -12,7 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTheme } from '../theme/ThemeProvider';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { StackNavigationProp } from '@react-navigation/stack';
-import { formatHMS } from '../hooks/useTime';
+import { formatMMSS } from '../hooks/useTime';
 
 type RootStackParamList = {
   Home: undefined;
@@ -89,7 +89,7 @@ export default function MatchHistoryScreen() {
           <Text style={[styles.title, { color: colors.text }]} numberOfLines={1}>
             {item.teamAName} {item.scoreA} — {item.scoreB} {item.teamBName}
           </Text>
-          <Text style={{ color: colors.text, opacity: 0.7 }}>{formatHMS(item.durationMs)}</Text>
+          <Text style={{ color: colors.text, opacity: 0.7 }}>{formatMMSS(item.durationMs)}</Text>
         </View>
 
         <View style={styles.rowBottom}>

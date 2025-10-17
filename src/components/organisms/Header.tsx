@@ -4,6 +4,7 @@ import { useTheme } from '../../theme/ThemeProvider';
 import { Text } from '../atoms/text';
 import Chrono from '../molecules/chrono';
 import type { Player } from '../molecules/playerCard';
+import { formatMMSS } from '../../hooks/useTime';
 
 
 type HeaderProps = {
@@ -52,9 +53,6 @@ export default function Header({
 
   return (
   <><View style={[styles.container, { backgroundColor: colors.primary }]}>
-
-        {/* menu burger */}
-
        <View style={styles.teamRow}>
         {/* gauche */}
         <View style={styles.colLeft}>
@@ -67,15 +65,33 @@ export default function Header({
             <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
           </TouchableOpacity>
           <Text style={{ color: colors.text }}>{scoreA}</Text>
+
         </View>
 
+
         {/* centre */}
+        
         <View style={styles.colCenter}>
-          <Text variant="title" style={[styles.title, { color: colors.text }]}>{title}</Text>
+          <View style={styles.chronoWrap}>
+            {/* 🛟 Fallback si Chrono ne montre rien */}
+            <Chrono
+              elapsedMs={elapsedMs}
+              onEnd={onEnd}
+              isRunning={isRunning}
+              onStart={onStart}
+              onPause={onPause}
+              onRestart={onRestart}
+            />
+            <Text variant="title" style={{ color: colors.text, position: 'absolute', opacity: 0.001 }}>
+              {formatMMSS(elapsedMs)}
+            </Text>
+          </View>
         </View>
 
         {/* droite */}
+
         <View style={styles.colRight}>
+          <Text style={{ color: colors.text }}>{scoreB}</Text>
           <TouchableOpacity
             onPress={() => onRenameTeam?.('B')}
             activeOpacity={0.7}
@@ -84,20 +100,13 @@ export default function Header({
             <Text variant="title" style={{ color: colors.text }}>{teamBName}</Text>
             <Text style={{ color: colors.text, opacity: 0.7, marginLeft: 6 }}>✏️</Text>
           </TouchableOpacity>
-          <Text style={{ color: colors.text }}>{scoreB}</Text>
         </View>
-      </View>
-      <View style={styles.chronoWrap}>
-        {/* ✅ on passe bien la callback END au chrono */}
-        <Chrono
-          elapsedMs={elapsedMs}
-          onEnd={onEnd}
-          isRunning={isRunning}
-          onStart={onStart}
-          onPause={onPause}
-          onRestart={onRestart} />
-      </View>
 
+
+
+
+
+      </View>
     </View>
     
       </>
@@ -124,14 +133,21 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 8,
   },
-  colLeft: { flex: 1, alignItems: 'flex-start', gap: 4 },
+  colLeft: { flex: 1, alignItems: 'flex-start', gap: 4 , flexDirection: 'row' },
   colCenter: { flex: 1, alignItems: 'center' },
   colRight: {
+    flexDirection: 'row',
     flex: 1,
     alignItems: 'flex-end',
-    gap: 4,
-    paddingRight: 0, // ✅ espace ajouté pour éviter le chevauchement
+    gap: 4, // ✅ espace ajouté pour éviter le chevauchement
   },
+
+  timer: {
+    fontSize: 18,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+
   title: { fontWeight: 'bold', fontSize: 20 },
   chronoWrap: { width: '100%', alignItems: 'center', marginTop: 6 },
 });

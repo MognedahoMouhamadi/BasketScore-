@@ -19,8 +19,13 @@ export default function BottomTabs() {
         tabBarInactiveTintColor: '#9ca3af',
         tabBarStyle: {
           backgroundColor: '#242422',
-          borderTopColor: 'transparent',
+          borderColor: 'transparent',
+          position: 'absolute',
+          left: 20,
+          right: 20,
+          alignItems: 'center',
         },
+ 
         tabBarIcon: ({ color, size }) => {
           const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
             Home: 'home',
@@ -39,3 +44,5 @@ export default function BottomTabs() {
     </Tab.Navigator>
   );
 }
+
+
